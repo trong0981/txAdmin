@@ -7,6 +7,7 @@ import humanizeDuration, { Unit } from 'humanize-duration';
 import consoleFactory from '@lib/console';
 import { AuthedCtx } from '@modules/WebServer/ctxTypes';
 import { z } from 'zod';
+import { notifyExternalApi } from '@lib/externalApiHelper';
 const console = consoleFactory(modulename);
 
 //Schema
@@ -104,6 +105,18 @@ async function handleBandIds(ctx: AuthedCtx): Promise<GenericApiOkResp> {
     }
     ctx.admin.logAction(`Banned <${identifiers.join(';')}>: ${reason}`);
 
+    //Notify external API
+    notifyExternalApi({
+        type: 'ban',
+        actionId,
+        identifiers,
+        playerName: false,
+        expiration,
+        durationInput,
+        reason,
+        author: ctx.admin.name,
+    }).catch(() => {});
+
     // Dispatch `txAdmin:events:playerBanned`
     try {
         let kickMessage, durationTranslated;
@@ -164,6 +177,20 @@ async function handleRevokeAction(ctx: AuthedCtx): Promise<GenericApiOkResp> {
         ctx.admin.logAction(`Revoked ${action.type} id ${actionId} from ${action.playerName ?? 'identifiers'}`);
     } catch (error) {
         return { error: `Failed to revoke action: ${(error as Error).message}` };
+    }
+
+    //Notify external API if revoking a ban
+    if (action.type === 'ban') {
+        notifyExternalApi({
+            type: 'unban',
+            actionId: action.id,
+            identifiers: action.ids,
+            playerName: action.playerName ?? false,
+            expiration: action.expiration,
+            bannedAt: action.timestamp,
+            reason: action.reason,
+            author: ctx.admin.name,
+        }).catch(() => {});
     }
 
     // Dispatch `txAdmin:events:actionRevoked`

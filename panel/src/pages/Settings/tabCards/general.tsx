@@ -28,6 +28,8 @@ const detectBrowserLanguage = () => {
 export const pageConfigs = {
     serverName: getPageConfig('general', 'serverName'),
     language: getPageConfig('general', 'language'),
+    apiEndpoint: getPageConfig('general', 'apiEndpoint'),
+    apiKey: getPageConfig('general', 'apiKey'),
 } as const;
 
 export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProps) {
@@ -47,11 +49,15 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
 
     //Refs for configs that don't use state
     const serverNameRef = useRef<HTMLInputElement | null>(null);
+    const apiEndpointRef = useRef<HTMLInputElement | null>(null);
+    const apiKeyRef = useRef<HTMLInputElement | null>(null);
 
     //Processes the state of the page and sets the card as pending save if needed
     const updatePageState = () => {
         const overwrites = {
             serverName: serverNameRef.current?.value,
+            apiEndpoint: apiEndpointRef.current?.value,
+            apiKey: apiKeyRef.current?.value,
         };
 
         const res = getConfigDiff(cfg, states, overwrites, false);
@@ -69,6 +75,14 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
         }
         if (localConfigs.general?.serverName?.length > 18) {
             return txToast.error('The Server Name is too big.');
+        }
+        const apiEndpointVal = localConfigs.general?.apiEndpoint;
+        if (apiEndpointVal) {
+            try {
+                new URL(apiEndpointVal);
+            } catch {
+                return txToast.error('The API Endpoint must be a valid URL.');
+            }
         }
         pageCtx.saveChanges(cardCtx, localConfigs);
     }
@@ -144,6 +158,33 @@ export default function ConfigCardGeneral({ cardCtx, pageCtx }: SettingsCardProp
                     The language to use on Chat/Discord messages. <br />
                     You can customize the phrases/words by using the <InlineCode>Custom</InlineCode> option. <br />
                     For more information, please read the <TxAnchor href="https://github.com/tabarra/txAdmin/blob/master/docs/translation.md">documentation</TxAnchor>.
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label="API Endpoint" htmlFor={cfg.apiEndpoint.eid} showOptional>
+                <Input
+                    id={cfg.apiEndpoint.eid}
+                    ref={apiEndpointRef}
+                    defaultValue={cfg.apiEndpoint.initialValue}
+                    placeholder={'https://api.example.com'}
+                    onInput={updatePageState}
+                    disabled={pageCtx.isReadOnly}
+                />
+                <SettingItemDesc>
+                    The external API endpoint URL used for integrations.
+                </SettingItemDesc>
+            </SettingItem>
+            <SettingItem label="API Key" htmlFor={cfg.apiKey.eid} showOptional>
+                <Input
+                    id={cfg.apiKey.eid}
+                    ref={apiKeyRef}
+                    type="password"
+                    defaultValue={cfg.apiKey.initialValue}
+                    placeholder={'••••••••••••••••'}
+                    onInput={updatePageState}
+                    disabled={pageCtx.isReadOnly}
+                />
+                <SettingItemDesc>
+                    The secret API key used to authenticate with the external API endpoint.
                 </SettingItemDesc>
             </SettingItem>
         </SettingsCardShell>

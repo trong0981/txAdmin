@@ -1,12 +1,15 @@
 import { getHostData } from "@lib/diagnostics";
+import si from 'systeminformation';
+import os from 'node:os';
 import { isProxy } from "util/types";
 import { startReadyWatcher } from "./boot/startReadyWatcher";
 import { Deployer } from "./deployer";
 import { TxConfigState, type FxMonitorHealth } from "@shared/enums";
-import type { GlobalStatusType } from "@shared/socketioTypes";
+import type { GlobalStatusType, HostStatsType } from "@shared/socketioTypes";
 import quitProcess from "@lib/quitProcess";
 import consoleFactory, { processStdioEnsureEol, setTTYTitle } from "@lib/console";
 import { isNumber, isString } from "@modules/CacheStore";
+import { txEnv } from "@core/globalData";
 const console = consoleFactory('Manager');
 
 //Types
@@ -37,8 +40,43 @@ export default class TxManager {
     public deployer: Deployer | null = null; //FIXME: implementar o deployer
     private readonly moduleShutdownHandlers: (() => void)[] = [];
     public isShuttingDown = false;
+    #hostStats: HostStatsType = null;
 
     //TODO: move txRuntime here?!
+
+    async #refreshHostStats() {
+        try {
+            const giga = 1024 * 1024 * 1024;
+            let memUsed: number, memTotal: number;
+            if (txEnv.isWindows) {
+                memTotal = os.totalmem() / giga;
+                memUsed = memTotal - (os.freemem() / giga);
+            } else {
+                const mem = await si.mem();
+                memTotal = mem.total / giga;
+                memUsed = mem.active / giga;
+            }
+            const [cpuLoad, netStats] = await Promise.all([
+                si.currentLoad(),
+                si.networkStats(),
+            ]);
+            const net = Array.isArray(netStats) ? netStats[0] : netStats;
+            this.#hostStats = {
+                cpu: { usage: Math.round(cpuLoad.currentLoad) },
+                memory: {
+                    used: memUsed,
+                    total: memTotal,
+                    usage: Math.round((memUsed / memTotal) * 100),
+                },
+                network: {
+                    rx_sec: Math.max(0, net?.rx_sec ?? 0),
+                    tx_sec: Math.max(0, net?.tx_sec ?? 0),
+                },
+            };
+        } catch (error) {
+            // silently ignore - hostStats stays null
+        }
+    }
 
     constructor() {
         //Listen for shutdown signals
@@ -58,6 +96,7 @@ export default class TxManager {
         //NOTE: probably txManager should be the one to decide if stuff like the host
         //stats changed enough to merit a refresh push
         setInterval(async () => {
+            await this.#refreshHostStats();
             txCore.webServer.webSocket.pushRefresh('status');
         }, 5000);
 
@@ -203,6 +242,7 @@ export default class TxManager {
                 whitelist: txConfig.whitelist.mode,
             },
             scheduler: txCore.fxScheduler.getStatus(), //no push events, updated every Scheduler.checkSchedule()
+            hostStats: this.#hostStats,
         }
     }
 }

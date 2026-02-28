@@ -4,6 +4,7 @@ import ServerMenu from './ServerMenu';
 import ServerControls from './ServerControls';
 import ServerStatus from './ServerStatus';
 import ServerSchedule from './ServerSchedule';
+import ServerHostStats from './ServerHostStats';
 
 
 type ServerSidebarProps = {
@@ -36,7 +37,7 @@ export function ServerSidebar({ isSheet }: ServerSidebarProps) {
             </div>
             <hr className={isSheet ? 'block' : 'hidden'} />
 
-            {window.txConsts.adsData.main ? (
+            {/*window.txConsts.adsData.main ? (
                 <a
                     href={window.txConsts.adsData.main.url}
                     onClick={handleExternalLinkClick}
@@ -52,7 +53,13 @@ export function ServerSidebar({ isSheet }: ServerSidebarProps) {
                         src={window.txConsts.adsData.main.img}
                     />
                 </a>
-            ) : null}
+            ) : null*/}
+
+            <div className={cn(
+                !isSheet && 'rounded-xl border bg-card text-card-foreground shadow-sm p-4',
+            )}>
+                <ServerHostStats />
+            </div>
 
             {window.txConsts.isWebInterface ? (
                 <div className='flex flex-col items-center justify-center gap-1 text-sm font-light opacity-85 hover:opacity-100'>

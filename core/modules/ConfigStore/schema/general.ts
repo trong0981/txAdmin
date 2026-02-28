@@ -21,8 +21,27 @@ const language = typeDefinedConfig({
     fixer: SYM_FIXER_DEFAULT,
 });
 
+const apiEndpoint = typeDefinedConfig({
+    name: 'API Endpoint',
+    default: '',
+    validator: z.string().refine(
+        (value) => value === '' || z.string().url().safeParse(value).success,
+        { message: 'API Endpoint must be a valid URL or empty.' },
+    ),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
+const apiKey = typeDefinedConfig({
+    name: 'API Key',
+    default: '',
+    validator: z.string(),
+    fixer: SYM_FIXER_DEFAULT,
+});
+
 
 export default {
     serverName,
     language,
+    apiEndpoint,
+    apiKey,
 } as const;

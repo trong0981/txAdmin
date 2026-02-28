@@ -1,7 +1,8 @@
 import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { PlayerModalRefType, useClosePlayerModal } from "@/hooks/playerModal";
-import { AlertTriangleIcon, MailIcon, ShieldCheckIcon } from "lucide-react";
+import { AlertTriangleIcon, EyeIcon, MailIcon, ShieldCheckIcon, XIcon } from "lucide-react";
+import { useState } from "react";
 import { KickOneIcon } from '@/components/KickIcons';
 import { useBackendApi } from "@/hooks/fetch";
 import { useAdminPerms } from "@/hooks/auth";
@@ -38,6 +39,7 @@ export default function PlayerModalFooter({ playerRef, player }: PlayerModalFoot
         method: 'POST',
         path: `/player/warn`,
     });
+    const [isSpectateOpen, setIsSpectateOpen] = useState(false);
 
     const closeOnSuccess = (data: GenericApiOkResp) => {
         if ('success' in data) {
@@ -130,6 +132,7 @@ export default function PlayerModalFooter({ playerRef, player }: PlayerModalFoot
     }
 
     return (
+        <>
         <DialogFooter className="max-w-2xl gap-2 p-2 md:p-4 border-t grid grid-cols-2 sm:flex">
             <Button
                 variant='outline'
@@ -139,6 +142,15 @@ export default function PlayerModalFooter({ playerRef, player }: PlayerModalFoot
                 className="pl-2 sm:mr-auto"
             >
                 <ShieldCheckIcon className="h-5 mr-1" /> Give Admin
+            </Button>
+            <Button
+                variant='outline'
+                size='sm'
+                disabled={!player || !player.isConnected}
+                onClick={() => setIsSpectateOpen(true)}
+                className="pl-2"
+            >
+                <EyeIcon className="h-5 mr-1" /> Spectate
             </Button>
             <Button
                 variant='outline'
@@ -173,5 +185,25 @@ export default function PlayerModalFooter({ playerRef, player }: PlayerModalFoot
                 <AlertTriangleIcon className="h-5 mr-1" /> Warn
             </Button>
         </DialogFooter>
+
+        {isSpectateOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 sm:p-6">
+                <div className="relative h-full w-full max-h-[95vh] max-w-[95vw] rounded-xl border border-border bg-black overflow-hidden">
+                    <button
+                        onClick={() => setIsSpectateOpen(false)}
+                        className="absolute top-3 right-3 z-10 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/90 transition-colors"
+                    >
+                        <XIcon className="h-5 w-5" />
+                    </button>
+                    <video
+                        className="h-full w-full object-contain"
+                        controls
+                        autoPlay
+                        playsInline
+                    />
+                </div>
+            </div>
+        )}
+        </>
     )
 }

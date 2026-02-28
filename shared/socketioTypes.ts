@@ -7,6 +7,12 @@ import { DiscordBotStatus, TxConfigState, type FxMonitorHealth } from "./enums";
 /**
  * Status channel
  */
+export type HostStatsType = {
+    cpu: { usage: number };
+    memory: { usage: number; used: number; total: number };
+    network: { rx_sec: number; tx_sec: number };
+} | null;
+
 export type GlobalStatusType = {
     configState: TxConfigState;
     discord: DiscordBotStatus;
@@ -30,6 +36,7 @@ export type GlobalStatusType = {
         nextSkip: false;
         nextIsTemp: false;
     };
+    hostStats: HostStatsType;
 }
 
 

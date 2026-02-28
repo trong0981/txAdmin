@@ -7,6 +7,7 @@ import { anyUndefined, calcExpirationFromDuration } from '@lib/misc';
 import consoleFactory from '@lib/console';
 import { AuthedCtx } from '@modules/WebServer/ctxTypes';
 import { SYM_CURRENT_MUTEX } from '@lib/symbols';
+import { notifyExternalApi } from '@lib/externalApiHelper';
 const console = consoleFactory(modulename);
 
 
@@ -182,6 +183,18 @@ async function handleBan(ctx: AuthedCtx, player: PlayerClass): Promise<GenericAp
         return { error: `Failed to ban player: ${(error as Error).message}` };
     }
     ctx.admin.logAction(`Banned player "${player.displayName}": ${reason}`);
+
+    //Notify external API
+    notifyExternalApi({
+        type: 'ban',
+        actionId,
+        identifiers: allIds,
+        playerName: player.displayName,
+        expiration,
+        durationInput,
+        reason,
+        author: ctx.admin.name,
+    }).catch(() => {});
 
     //No need to dispatch events if server is not online
     if (txCore.fxRunner.isIdle) {

@@ -1,5 +1,5 @@
 import { TxConfigState } from "@shared/enums";
-import { GlobalStatusType } from "@shared/socketioTypes";
+import { GlobalStatusType, HostStatsType } from "@shared/socketioTypes";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 
 
@@ -13,6 +13,7 @@ export const fxRunnerStateAtom = atom((get) => get(globalStatusAtom)?.runner ?? 
     isIdle: true,
     isChildAlive: false,
 });
+export const hostStatsAtom = atom<HostStatsType>((get) => get(globalStatusAtom)?.hostStats ?? null);
 
 
 /**
@@ -24,4 +25,8 @@ export const useSetGlobalStatus = () => {
 
 export const useGlobalStatus = () => {
     return useAtomValue(globalStatusAtom);
+}
+
+export const useHostStats = () => {
+    return useAtomValue(hostStatsAtom);
 }
